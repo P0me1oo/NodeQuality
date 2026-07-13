@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nodequality.com/schema/nq-webhook-final-v1.schema.json",
+  "title": "NodeQuality Webhook Final Result 1.0",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "protocol",
+    "protocol_version",
+    "schema",
+    "nodequality_version",
+    "job_id",
+    "event_id",
+    "sequence",
+    "event_type",
+    "timestamp",
+    "status",
+    "exit",
+    "reports",
+    "modules",
+    "official_upload",
+    "cleanup"
+  ],
+  "properties": {
+    "protocol": { "const": "nq-webhook" },
+    "protocol_version": { "const": "1.0" },
+    "schema": { "const": "final_result" },
+    "nodequality_version": { "type": "string", "maxLength": 32 },
+    "job_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "event_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "event_type": { "enum": ["job.completed", "job.failed", "job.cancelled", "job.terminated"] },
+    "status": { "enum": ["succeeded", "partial", "failed", "cancelled", "terminated"] },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "exit": {
+      "type": "object",
+      "required": ["category", "code", "signal"],
+      "properties": {
+        "category": { "enum": ["succeeded", "partial", "failed", "cancelled", "terminated"] },
+        "code": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "signal": { "type": ["string", "null"] }
+      }
+    },
+    "reports": { "type": "object" },
+    "modules": {
+      "type": "object",
+      "required": ["hardware", "ip_quality", "network_quality", "backroute"]
+    },
+    "official_upload": { "type": "object" },
+    "cleanup": { "type": "object" },
+    "context": { "type": "object" }
+  }
+}

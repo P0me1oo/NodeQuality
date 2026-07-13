@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nodequality.com/schema/nq-webhook-event-v1.schema.json",
+  "title": "NodeQuality Webhook Event 1.0",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "protocol",
+    "protocol_version",
+    "schema",
+    "nodequality_version",
+    "job_id",
+    "event_id",
+    "sequence",
+    "event_type",
+    "job_status",
+    "module",
+    "module_status",
+    "progress",
+    "phase",
+    "timestamp"
+  ],
+  "properties": {
+    "protocol": { "const": "nq-webhook" },
+    "protocol_version": { "const": "1.0" },
+    "schema": { "const": "event" },
+    "nodequality_version": { "type": "string", "maxLength": 32 },
+    "job_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "event_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "event_type": {
+      "enum": [
+        "job.started",
+        "job.progress",
+        "module.started",
+        "module.completed",
+        "module.partial",
+        "module.failed",
+        "module.skipped",
+        "cleanup.started",
+        "cleanup.completed",
+        "cleanup.partial",
+        "cleanup.failed"
+      ]
+    },
+    "module": {
+      "enum": ["core", "environment", "hardware", "ip_quality", "network_quality", "backroute", "report_upload", "cleanup"]
+    },
+    "module_status": {
+      "enum": ["pending", "running", "succeeded", "partial", "failed", "skipped", "cancelled"]
+    },
+    "progress": {
+      "type": "object",
+      "required": ["current", "total", "unit"],
+      "properties": {
+        "current": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "total": { "const": 100 },
+        "unit": { "const": "percent" }
+      }
+    },
+    "phase": {
+      "type": "object",
+      "required": ["code", "status", "message"],
+      "properties": {
+        "code": { "type": "string", "maxLength": 96 },
+        "status": { "type": "string", "maxLength": 32 },
+        "message": { "type": "string", "maxLength": 256 }
+      }
+    },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "error": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["code", "summary"],
+          "properties": {
+            "code": { "type": "string", "maxLength": 96 },
+            "summary": { "type": "string", "maxLength": 512 }
+          }
+        }
+      ]
+    }
+  }
+}

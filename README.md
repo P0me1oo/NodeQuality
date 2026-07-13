@@ -1,6 +1,8 @@
 # NodeQuality
 在沙箱环境中运行vps测试脚本，并排版测试结果
 
+当前版本：`1.0.0`
+
 本项目本质上是测试工具集合的**前置加载器和结果后处理**项目。把服务器测试工作的流程给规范化自动化了。
 让测试仅仅是测试，不要留下一堆痕迹；让测试可以更舒服省心，自动排版截图。
 
@@ -14,6 +16,28 @@
 ```
 bash <(curl -sL https://run.NodeQuality.com)
 ```
+
+## 可选 Webhook 集成
+
+NodeQuality 支持可选的 `nq-webhook/1.0` 结构化事件和最终结果。未配置 Webhook 时，原有交互、终端输出、检测模块和在线报告上传保持不变。
+
+```bash
+export NQ_WEBHOOK_TOKEN='当前 job 的一次性 Token'
+
+bash NodeQuality.sh \
+  --webhook-url 'https://example.com/event' \
+  --webhook-job-id 'job-123' \
+  --webhook-version '1.0' \
+  --non-interactive \
+  --hardware deep \
+  --ip run \
+  --network low \
+  --route run
+```
+
+Token 不支持通过 `--webhook-token <明文>` 传入，请使用环境变量、`--webhook-token-env` 或 `--webhook-token-fd`。Webhook 只负责发送结构化检测事件和结果，不调用 Telegram Bot API，也不替代 NodeQuality 官方在线报告上传。
+
+协议字段、事件枚举、限制、重试和退出码见 [Webhook 协议](docs/WEBHOOK.md)，测试边界见 [测试说明](docs/TESTING.md)。
 ## 沙箱隔离，无痕测试
 测试脚本往往需要加载很多软件和工具，符合**把各种专用工具串起来解决问题的linux哲学**。 为了减少测试过程中安装的软件和产生的临时文件占用空间，将所有测试放在**BenchOS**内。 chroot特别适合作为测试脚本的沙箱工具，因为其**不用额外安装、极致的轻量、只有文件隔离而没有网络和内存隔离**。
 
