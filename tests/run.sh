@@ -21,6 +21,18 @@ test_release_line_endings(){
     ! LC_ALL=C grep -q $'\r' "$root_dir/NodeQuality.sh"
 }
 
+test_noninteractive_term_default(){
+    [[ $(env -u TERM bash -c 'source "$1"; printf "%s" "$TERM"' _ "$root_dir/NodeQuality.sh") == xterm ]]
+}
+
+test_module_timeout_wrapper(){
+    source "$root_dir/NodeQuality.sh"
+    captured=""
+    timeout(){ captured="$*"; return 124; }
+    chroot_run_timeout 1800 "true"
+    [[ $? -eq 124 && "$captured" == *'--signal=TERM --kill-after=30s 1800s'* ]]
+}
+
 test_version(){
     local output
     output=$(bash "$root_dir/NodeQuality.sh" --version)
@@ -193,6 +205,8 @@ test_phase_hook_uses_function_boundaries(){
 
 run_test 'Bash 语法' test_syntax
 run_test '发布脚本使用 LF 换行' test_release_line_endings
+run_test '非交互环境提供 TERM 默认值' test_noninteractive_term_default
+run_test '第三方模块使用有限执行超时' test_module_timeout_wrapper
 run_test '版本与协议版本' test_version
 run_test '拒绝命令行明文 Token' test_plain_token_rejected
 run_test '未启用 Webhook 向后兼容' test_backward_compatible_defaults

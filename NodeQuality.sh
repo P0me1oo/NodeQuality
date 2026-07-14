@@ -6,6 +6,11 @@ NQ_WEBHOOK_PROTOCOL_VERSION="1.0"
 NQ_EVENT_BODY_LIMIT=8192
 NQ_FINAL_BODY_LIMIT=65536
 NQ_ERROR_SUMMARY_LIMIT=512
+if [[ -z "${TERM:-}" || "$TERM" == "dumb" ]]; then
+    export TERM=xterm
+else
+    export TERM
+fi
 script_source_dir=""
 if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
     script_source_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)
@@ -561,6 +566,17 @@ function chroot_run(){
     chroot "$work_dir/BenchOs" /bin/bash -c "$*"
 }
 
+function chroot_run_timeout(){
+    local seconds="$1"
+    shift
+    if command -v timeout >/dev/null 2>&1; then
+        timeout --signal=TERM --kill-after=30s "${seconds}s" \
+            chroot "$work_dir/BenchOs" /bin/bash -c "$*"
+    else
+        chroot_run "$*"
+    fi
+}
+
 function load_part(){
     if [[ -n "$script_source_dir" && -r "$script_source_dir/part/swap.sh" ]]; then
         . "$script_source_dir/part/swap.sh"
@@ -754,23 +770,23 @@ function run_HardwareQuality(){
     [[ "$run_hardware_quality_test" =~ ^[Vv]$ ]] && params=" -V"
     pre_fetch_info # HQ预处理
     payload=$(declare -p osinfo meminfo diskinfo) # HQ预处理
-    curl --fail --location --silent --show-error --proto '=https' --proto-redir '=https' https://Hardware.Check.Place | chroot_run "env NQ_REPORT_SLOT=hardware NQENV=$(printf '%q' "$payload") bash -s -- $opt_lang $params -y -o /result/$hardware_quality_json_filename"
+    curl --fail --location --silent --show-error --proto '=https' --proto-redir '=https' https://Hardware.Check.Place | chroot_run_timeout 3600 "env NQ_REPORT_SLOT=hardware NQENV=$(printf '%q' "$payload") bash -s -- $opt_lang $params -y -o /result/$hardware_quality_json_filename"
     # 原始语句为：chroot_run bash <(curl -Ls https://Hardware.Check.Place) $opt_lang -y -o /result/$hardware_quality_json_filename
 }
 
 
 function run_ip_quality(){
-    chroot_run "env NQ_REPORT_SLOT=ip_quality bash <(curl -Ls https://IP.Check.Place) $opt_ipv $opt_lang -y -o /result/$ip_quality_json_filename"
+    chroot_run_timeout 1800 "env NQ_REPORT_SLOT=ip_quality bash <(curl -Ls https://IP.Check.Place) $opt_ipv $opt_lang -y -o /result/$ip_quality_json_filename"
 }
 
 function run_net_quality(){
     local params=""
     [[ "$run_net_quality_test" =~ ^[Ll]$ ]] && params=" -L"
-    chroot_run "env NQ_REPORT_SLOT=network_quality NQ_PHASE_MODULE=network_quality NQ_PHASE_FILE=/result/network_quality.phases BASH_ENV=/usr/local/lib/nq-phase-hook.sh bash <(curl -Ls https://Net.Check.Place) $opt_ipv $opt_lang $params -y -o /result/$net_quality_json_filename"
+    chroot_run_timeout 3600 "env NQ_REPORT_SLOT=network_quality NQ_PHASE_MODULE=network_quality NQ_PHASE_FILE=/result/network_quality.phases BASH_ENV=/usr/local/lib/nq-phase-hook.sh bash <(curl -Ls https://Net.Check.Place) $opt_ipv $opt_lang $params -y -o /result/$net_quality_json_filename"
 }
 
 function run_net_trace(){
-    chroot_run "env NQ_REPORT_SLOT=backroute NQ_PHASE_MODULE=backroute NQ_PHASE_FILE=/result/backroute.phases BASH_ENV=/usr/local/lib/nq-phase-hook.sh bash <(curl -Ls https://Net.Check.Place) $opt_ipv $opt_lang -R -n -S 123 -o /result/$backroute_trace_json_filename"
+    chroot_run_timeout 2400 "env NQ_REPORT_SLOT=backroute NQ_PHASE_MODULE=backroute NQ_PHASE_FILE=/result/backroute.phases BASH_ENV=/usr/local/lib/nq-phase-hook.sh bash <(curl -Ls https://Net.Check.Place) $opt_ipv $opt_lang -R -n -S 123 -o /result/$backroute_trace_json_filename"
 }
 
 uploadAPI="https://api.nodequality.com/api/v1/record"

@@ -15,6 +15,7 @@ bash tests/run.sh
 - 明文命令行 Token 拒绝；
 - 未启用 Webhook 的兼容路径；
 - Webhook 配置校验；
+- 非交互环境的 `TERM` 默认值和第三方模块有限执行超时；
 - sequence 递增；
 - 旧进度不使任务倒退；
 - TCP 延迟等细分阶段优先读取结构化 phase sidecar，并覆盖受限终端阶段文案回退；
